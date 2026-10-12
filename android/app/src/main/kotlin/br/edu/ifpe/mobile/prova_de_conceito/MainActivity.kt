@@ -1,4 +1,4 @@
-package br.edu.ifpe.mobile.prova_de_conceito // Substitua pelo package name real do seu app
+package br.edu.ifpe.mobile.prova_de_conceito
 
 import android.graphics.BitmapFactory
 import androidx.annotation.NonNull
@@ -18,23 +18,52 @@ class MainActivity: FlutterActivity() {
         super.configureFlutterEngine(flutterEngine)
 
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
-            if (call.method == "extractLandmarks") {
-                val imagePath = call.argument<String>("imagePath")
+            when (call.method) {
+                "extractLandmarks" -> {
+                    val imagePath = call.argument<String>("imagePath")
 
-                if (imagePath != null) {
-                    try {
-                        val points = processImage(imagePath)
-                        result.success(points)
-                    } catch (e: Exception) {
-                        result.error("MEDIAPIPE_ERROR", e.message, null)
+                    if (imagePath != null) {
+                        try {
+                            val points = processImage(imagePath)
+                            result.success(points)
+                        } catch (e: Exception) {
+                            result.error("MEDIAPIPE_ERROR", e.message, null)
+                        }
+                    } else {
+                        result.error("INVALID_ARGUMENT", "Caminho da imagem é nulo", null)
                     }
-                } else {
-                    result.error("INVALID_ARGUMENT", "Caminho da imagem é nulo", null)
                 }
-            } else {
-                result.notImplemented()
+
+                // Dimensões em pixels do mesmo bitmap usado na detecção.
+                // O Dart precisa delas para corrigir a proporção ao calcular os ângulos.
+                "getImageSize" -> {
+                    val imagePath = call.argument<String>("imagePath")
+
+                    if (imagePath != null) {
+                        try {
+                            result.success(readImageSize(imagePath))
+                        } catch (e: Exception) {
+                            result.error("IMAGE_SIZE_ERROR", e.message, null)
+                        }
+                    } else {
+                        result.error("INVALID_ARGUMENT", "Caminho da imagem é nulo", null)
+                    }
+                }
+
+                else -> result.notImplemented()
             }
         }
+    }
+
+    private fun readImageSize(imagePath: String): Map<String, Int> {
+        val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeFile(imagePath, options)
+
+        if (options.outWidth <= 0 || options.outHeight <= 0) {
+            throw Exception("Não foi possível ler as dimensões da imagem: $imagePath")
+        }
+
+        return mapOf("width" to options.outWidth, "height" to options.outHeight)
     }
 
     private fun processImage(imagePath: String): List<Map<String, Double>> {
