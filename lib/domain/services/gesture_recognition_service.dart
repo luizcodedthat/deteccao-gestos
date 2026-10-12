@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import '../models/gesture.dart';
 import '../models/hand_point.dart';
 
-const double kLimiarGestos = 150.0;
+const double kLimiarGestos = 170.0;
 
 class GestureRecognitionService {
   final double limiar;
