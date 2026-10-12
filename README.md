@@ -15,8 +15,8 @@ Micro-Projeto de Visão Computacional — Capacitação em Visão Computacional 
 
 ## Vídeos de apresentação
 
-- [Vídeo de apresentação (YouTube)](https://youtu.be/Ol30H8wTrKs)
-- [Vídeo do Lucas (Google Drive)](https://drive.google.com/file/d/1a-Xdm_yY_wQ1hAGeCnRLN6kM31ofFAac/view)
+- [Vídeo de apresentação Luiz](https://youtu.be/Ol30H8wTrKs)
+- [Vídeo de apresentação Lucas](https://drive.google.com/file/d/1a-Xdm_yY_wQ1hAGeCnRLN6kM31ofFAac/view)
 
 ## Sumário
 
