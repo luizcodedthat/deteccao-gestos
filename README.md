@@ -93,7 +93,9 @@ Um dedo está **estendido** quando `θ >= limiar` e **dobrado** caso contrário.
 
 O limiar é escolhido apenas no conjunto de calibração do notebook, testando 130°, 140°, 150°, 160° e 170°. O critério é a maior acurácia, com desempate pelo menor número de `nao_reconhecido` e depois pelo valor mais próximo de 150°. O conjunto de teste não participa dessa escolha.
 
-No app, o limiar é a constante `kLimiarGestos` em `lib/domain/services/gesture_recognition_service.dart`. Ela deve ter o mesmo valor impresso pelo notebook em "Limiar escolhido".
+O limiar escolhido na execução do notebook foi **170°**. Esse é o maior valor da faixa testada, então limiares acima de 170° não foram avaliados.
+
+No app, o limiar é a constante `kLimiarGestos` em `lib/domain/services/gesture_recognition_service.dart`, e deve valer `170.0`, o mesmo valor impresso pelo notebook em "Limiar escolhido".
 
 ## 3. Notebook de desenvolvimento e avaliação
 
@@ -112,7 +114,28 @@ Arquivo: `notebooks/Gestos_em_Foto.ipynb` (executa no Google Colab, sem GPU).
 
 **Saídas** (`saidas_gestos.zip`): `resultados_gestos.csv` (por imagem, com os ângulos), `amostra_hagrid.csv`, `regras_gestos.csv` e `contrato_flutter_dart.md`.
 
-Os resultados vivem nas saídas do notebook executado. Este README não fixa métricas.
+### 3.1 Resultados da execução
+
+Amostra: 600 imagens (300 de calibração e 300 de teste, 100 por classe em cada), de 525 pessoas (262 na calibração e 263 no teste, nenhuma em comum). Das 5.274 imagens das três classes na amostra do HaGRID, 4.138 tinham uma única mão e rótulo coerente.
+
+| Etapa | Resultado |
+|---|---|
+| Detecção da mão, calibração | 284 de 300 |
+| Detecção da mão, teste | 274 de 300 (91,3%) |
+| Limiar escolhido (calibração) | 170°, com 93,0% de acurácia |
+| **Acurácia no teste** | **87,3% (262/300)**, IC de 95% (Wilson): 83,1% a 90,6% |
+
+Desempenho por classe no teste:
+
+| Classe | Precisão | Recall | Mão detectada |
+|---|---|---|---|
+| `palma_aberta` | 1,00 | 0,92 | 96% |
+| `punho_fechado` | 0,99 | 0,92 | 92% |
+| `paz` | 1,00 | 0,78 | 86% |
+
+Dos 38 erros do teste, 26 foram mão não detectada, 11 foram padrões que as regras não reconhecem (`nao_reconhecido`) e 1 foi confusão entre classes (`paz` previsto como `punho_fechado`). O gesto com menor recall é `paz`, e é também a classe com menor taxa de detecção da mão. Falhas de detecção contam como erro na acurácia.
+
+Os valores acima vêm de uma execução com `SEED = 42`. As saídas completas (matriz de confusão, erros com landmarks desenhados) estão no notebook executado.
 
 ## 4. Aplicativo Flutter/Android
 
@@ -183,7 +206,7 @@ Depois de escolher uma imagem na galeria, a tela mostra a prévia da foto, o ges
 
 ### 5.2 App
 
-Requisitos: Flutter com Dart 3, JDK 17, dispositivo **Android físico ARM64** (o app foi validado assim; o emulador não é usado). Configuração relevante do projeto: `minSdk = 24`, dependência `com.google.mediapipe:tasks-vision:0.10.14`, pacote `image_picker`.
+Requisitos: Flutter com Dart 3, JDK 17, dispositivo **Android físico ARM64** (o app foi validado assim; o emulador não é usado). Configuração relevante do projeto: `minSdk = 24`, dependência `com.google.mediapipe:tasks-vision:0.10.29`, pacote `image_picker`, Android Gradle Plugin 8.5.1 ou superior.
 
 ```bash
 # modelo do MediaPipe (uma vez)
@@ -195,6 +218,13 @@ flutter pub get
 flutter test
 flutter run            # com o celular conectado
 ```
+
+### 5.3 Compatibilidade de dispositivos
+
+- **Validado em:** Samsung Galaxy A55 (aparelho físico, ARM64), Pixel 7 (android 14, emulador).
+- **Páginas de 16 KB.** O Android 15 passou a aceitar aparelhos com páginas de memória de 16 KB, e as bibliotecas nativas (`.so`) precisam estar alinhadas para isso. Segundo resposta oficial do Google, o suporte a 16 KB no MediaPipe Tasks começou na versão 0.10.26, por isso a dependência fica em 0.10.29.
+- **Emulador.** Os mantenedores do MediaPipe informam que emuladores não são suportados, e issues do projeto relatam `UnsatisfiedLinkError` por falta de bibliotecas para algumas arquiteturas (x86 e x86_64). Use aparelho físico.
+- **Verificação.** `adb shell getconf PAGE_SIZE` informa o tamanho de página do aparelho (4096 ou 16384). O Android Studio mostra o alinhamento das `.so` em *Build → Analyze APK*.
 
 ## 6. Paridade entre notebook e app
 
@@ -208,13 +238,14 @@ Pontos que podem causar divergência:
 
 - **Orientação EXIF.** O notebook aplica `ImageOps.exif_transpose` antes de detectar. O Kotlin decodifica com `BitmapFactory.decodeFile`, sem corrigir EXIF. Em fotos de câmera com rotação gravada em EXIF, a detecção e os ângulos podem diferir.
 - **Redução de imagem.** O notebook reduz imagens com lado maior que 1280 px, mantendo a proporção. Os pontos são normalizados e a proporção se mantém, então o efeito é pequeno.
-- **Limiar.** A constante do app precisa coincidir com a escolhida pelo notebook.
+- **Limiar.** A constante do app (`kLimiarGestos`) precisa coincidir com a escolhida pelo notebook (170°).
 
 ## 7. Limitações
 
 - O polegar não entra nas regras.
 - O ângulo é medido em 2D, no plano da imagem. Dedos apontados para a câmera ficam encurtados e alteram o ângulo.
 - A avaliação usa uma amostra reduzida (384p) do HaGRID, com uma única mão por imagem e poses encenadas. O resultado indica desempenho nesse conjunto e não em condições gerais.
+- A detecção da mão falhou em 26 das 300 imagens de teste (8,7%), a maior parte dos erros. Em imagens 384p com a pessoa inteira no quadro, a mão ocupa pouco espaço.
 - Não há avaliação por grupo demográfico.
 - Somente imagens estáticas da galeria; não há captura em tempo real.
 
