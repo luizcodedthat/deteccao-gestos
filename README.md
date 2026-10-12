@@ -13,6 +13,11 @@ Micro-Projeto de Visão Computacional — Capacitação em Visão Computacional 
 
 > **Escopo.** É um classificador heurístico baseado em geometria, sobre um detector de landmarks pré-treinado. Não há treinamento de modelo. São três poses estáticas simplificadas; o sistema não reconhece linguagem de sinais.
 
+## Vídeos de apresentação
+
+- [Vídeo de apresentação (YouTube)](https://youtu.be/Ol30H8wTrKs)
+- [Vídeo do Lucas (Google Drive)](https://drive.google.com/file/d/1a-Xdm_yY_wQ1hAGeCnRLN6kM31ofFAac/view)
+
 ## Sumário
 
 1. [Visão geral da arquitetura](#1-visão-geral-da-arquitetura)
